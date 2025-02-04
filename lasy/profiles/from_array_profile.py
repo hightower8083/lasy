@@ -82,9 +82,20 @@ class FromArrayProfile(Profile):
             else:
                 r = axes["r"]
 
-            self.combined_field_interp = RegularGridInterpolator(
+            self.field_interp_abs = RegularGridInterpolator(
                 (r, axes["t"]),
-                np.abs(array) + 1.0j * np.unwrap(np.angle(array), axis=-1),
+                np.abs(array),
+                bounds_error=False,
+                fill_value=0.0,
+            )
+
+            ang = np.angle(array)
+            ang = np.unwrap(ang, axis=-1)
+            ang = np.unwrap(ang, axis=0)
+
+            self.field_interp_ang = RegularGridInterpolator(
+                (r, axes["t"]),
+                ang,
                 bounds_error=False,
                 fill_value=0.0,
             )
@@ -93,11 +104,16 @@ class FromArrayProfile(Profile):
         """Return the envelope field of the scaled profile."""
         if self.dim == "xyt":
             combined_field = self.combined_field_interp((x, y, t))
-        else:
-            combined_field = self.combined_field_interp((np.sqrt(x**2 + y**2), t))
-
-        envelope = np.abs(np.real(combined_field)) * np.exp(
-            1.0j * np.imag(combined_field)
+            envelope = np.abs(np.real(combined_field)) * np.exp(
+                1.0j * np.imag(combined_field)
         )
+
+        else:
+            field_interp_abs = self.field_interp_abs((np.sqrt(x**2 + y**2), t))
+            field_interp_ang = self.field_interp_ang((np.sqrt(x**2 + y**2), t))
+            combined_field =field_interp_abs
+            envelope = np.abs(field_interp_abs) * np.exp(
+                1.0j * field_interp_ang
+            )
 
         return envelope

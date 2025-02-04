@@ -117,6 +117,14 @@ class FromOpenPMDProfile(FromArrayProfile):
             omg0 = it.meshes["laserEnvelope"].get_attribute("angularFrequency")
             array = F
 
+        """
+        if omg0 < 0:
+            omg0 *= -1
+            array = np.conj(array)
+            print("Warning: input field will be conjugated")
+        """
+        omg0 = np.abs(omg0)
+
         wavelength = 2 * np.pi * c / omg0
         if verbose:
             print(
